@@ -1,3 +1,4 @@
+import subprocess
 import time
 from pathlib import Path
 
@@ -24,7 +25,7 @@ class YamlProcessor:
             else data
         )
 
-    def get_RCS_path(self):
+    def get_rcs_path(self):
         if self.RCS_path:
             return self.RCS_path
         with self.file_path.open("r") as file:
@@ -41,15 +42,10 @@ class YamlProcessor:
                     data = self.yaml.load(file)
                     locale_data = data.setdefault("locale_data", {})
                     available_locales = locale_data.setdefault("available_locales", [])
-                    if (
-                        "zh_CN" not in available_locales
-                        or locale_data["default_locale"] != "zh_CN"
-                        or data["settings"]["locale"] != "zh_CN"
-                    ):
-                        if "zh_CN" not in available_locales:
-                            available_locales.append("zh_CN")
-                        locale_data["default_locale"] = "zh_CN"
-                        data["settings"]["locale"] = "zh_CN"
+                    if "zh_CN" not in available_locales:
+                        available_locales.append("zh_CN")
+                    locale_data["default_locale"] = "zh_CN"
+                    data["settings"]["locale"] = "zh_CN"
                     file.seek(0)
                     self.yaml.dump(self.transform(data), file)
                     file.truncate()
@@ -67,16 +63,14 @@ class LolLauncher:
         self.processor.process_yaml()
         self.observer = Observer()
         self.observer.schedule(
-            self.event_handler, path=self.file_path.parent, recursive=False
+            self.event_handler, path=str(self.file_path.parent), recursive=False
         )
         self.observer.start()
 
     def open_exe(self):
-        import subprocess
-
         subprocess.Popen(
             [
-                self.processor.get_RCS_path(),
+                str(self.processor.get_rcs_path()),
                 "--launch-product=league_of_legends",
                 "--launch-patchline=live",
             ]
@@ -89,12 +83,13 @@ class LolLauncher:
                 if "LeagueClientUxRender.exe" in (
                     p.name() for p in psutil.process_iter()
                 ):
-                    self.observer.stop()
                     break
                 time.sleep(1)
         except KeyboardInterrupt:
+            pass
+        finally:
             self.observer.stop()
-        self.observer.join()
+            self.observer.join()
 
 
 file_path = "C:/ProgramData/Riot Games/Metadata/league_of_legends.live/league_of_legends.live.product_settings.yaml"
