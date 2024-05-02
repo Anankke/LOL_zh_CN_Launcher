@@ -42,13 +42,18 @@ class YamlProcessor:
                     data = self.yaml.load(file)
                     locale_data = data.setdefault("locale_data", {})
                     available_locales = locale_data.setdefault("available_locales", [])
-                    if "zh_CN" not in available_locales:
-                        available_locales.append("zh_CN")
-                    locale_data["default_locale"] = "zh_CN"
-                    data["settings"]["locale"] = "zh_CN"
-                    file.seek(0)
-                    self.yaml.dump(self.transform(data), file)
-                    file.truncate()
+                    if (
+                        "zh_CN" not in available_locales
+                        or locale_data["default_locale"] != "zh_CN"
+                        or data["settings"]["locale"] != "zh_CN"
+                    ):
+                        if "zh_CN" not in available_locales:
+                            available_locales.append("zh_CN")
+                        locale_data["default_locale"] = "zh_CN"
+                        data["settings"]["locale"] = "zh_CN"
+                        file.seek(0)
+                        self.yaml.dump(self.transform(data), file)
+                        file.truncate()
                 break
             except (PermissionError, FileNotFoundError):
                 time.sleep(0.1)
